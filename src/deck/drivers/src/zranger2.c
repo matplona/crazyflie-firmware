@@ -57,6 +57,8 @@ static uint16_t range_last = 0;
 
 static bool isInit;
 
+uint8_t contribute;
+
 NO_DMA_CCM_SAFE_ZERO_INIT static VL53L1_Dev_t dev;
 
 static uint16_t zRanger2GetMeasurementAndRestart(VL53L1_Dev_t *dev)
@@ -80,6 +82,10 @@ static uint16_t zRanger2GetMeasurementAndRestart(VL53L1_Dev_t *dev)
     status = status;
 
     return range;
+}
+
+bool isContributing(){
+  return contribute > 0;
 }
 
 void zRanger2Init(DeckInfo* info)
@@ -140,7 +146,9 @@ void zRanger2Task(void* arg)
     if (range_last < RANGE_OUTLIER_LIMIT) {
       float distance = (float)range_last * 0.001f; // Scale from [mm] to [m]
       float stdDev = expStdA * (1.0f  + expf( expCoeff * (distance - expPointA)));
-      rangeEnqueueDownRangeInEstimator(distance, stdDev, xTaskGetTickCount());
+      if(isContributing()){
+        rangeEnqueueDownRangeInEstimator(distance, stdDev, xTaskGetTickCount());
+      }
     }
   }
 }
@@ -166,3 +174,13 @@ PARAM_GROUP_START(deck)
 PARAM_ADD_CORE(PARAM_UINT8 | PARAM_RONLY, bcZRanger2, &isInit)
 
 PARAM_GROUP_STOP(deck)
+
+
+PARAM_GROUP_START(motion)
+
+/**
+ * @brief Nonzero if [Z-ranger deck v2](%https://store.bitcraze.io/collections/decks/products/z-ranger-deck-v2) contribute to the state estimation
+ */
+PARAM_ADD_CORE(PARAM_UINT8 | PARAM_PERSISTENT, disableZrange, &contribute)
+
+PARAM_GROUP_STOP(motion)
