@@ -85,7 +85,7 @@ static uint16_t zRanger2GetMeasurementAndRestart(VL53L1_Dev_t *dev)
 }
 
 bool isContributing(){
-  return contribute > 0;
+  return contribute == 0;
 }
 
 void zRanger2Init(DeckInfo* info)
